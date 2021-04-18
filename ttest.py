@@ -60,24 +60,37 @@ def ttest(filename: str):
         [(x[0], y[0]) for x, y in groupings],
     )
 
-    # data = anndata.AnnData()
-    # grouping = ["1-NOR" if x.startswith("pca1") else "2-HF" for x in data.obs.index.tolist()]
-    # test = de.test.t_test(data, grouping)
+    for grouping in groupings:
+        tag_1, indices_1 = grouping[0]
+        tag_2, indices_2 = grouping[1]
+        indices_1 = set(indices_1)
+        indices_2 = set(indices_2)
+        remained_df = df.drop(
+            index=[x for x in df.index if (x not in indices_1 and x not in indices_2)]
+        )
+        data = anndata.AnnData(remained_df)
+        new_grouping = [
+            f"1-{tag_1}" if x in indices_1 else f"2-{tag_2}"
+            for x in data.obs.index.tolist()
+        ]
+        test = de.test.t_test(data, new_grouping)
 
-    # summary_output_file = get_output_filename(filename, ".out.csv")
-    # test.summary().to_csv(summary_output_file)
-    # LOGGER.info("summary saved, output=%s", summary_output_file)
+        summary_output_file = get_output_filename(filename, f".{tag_1}_{tag_2}.out.csv")
+        test.summary().to_csv(summary_output_file)
+        LOGGER.info("summary saved, output=%s", summary_output_file)
 
-    # volcano_output_file = get_output_filename(filename, ".volcano.jpg")
-    # test.plot_volcano(
-    #     corrected_pval=True,
-    #     alpha=0.05,
-    #     size=20,
-    #     show=False,
-    #     save=volcano_output_file,
-    #     # highlight_ids=["NPPA"],
-    # )
-    # LOGGER.info("volcano saved, output=%s", volcano_output_file)
+        volcano_output_file = get_output_filename(
+            filename, f".{tag_1}_{tag_2}.volcano.jpg"
+        )
+        test.plot_volcano(
+            corrected_pval=True,
+            alpha=0.05,
+            size=20,
+            show=False,
+            save=volcano_output_file,
+            # highlight_ids=["NPPA"],
+        )
+        LOGGER.info("volcano saved, output=%s", volcano_output_file)
 
 
 def parse_args():
