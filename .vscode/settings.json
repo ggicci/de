@@ -1,0 +1,5 @@
+{
+    "python.pythonPath": "/home/ggicci/.local/share/virtualenvs/de-V4QC1wnX/bin/python",
+    "python.formatting.blackPath": "/usr/bin/black",
+    "python.formatting.provider": "black"
+}
