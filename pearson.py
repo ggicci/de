@@ -1,28 +1,65 @@
 #!/usr/bin/env python
 
+import logging
+from multiprocessing import Manager, Pool
+from typing import List
+
+import numpy as np
 import pandas as pd
 
-left = ["Abl1", "Anapc1", "Anapc10", "Anapc11", "Anapc13", "Anapc2", "Anapc4", "Anapc5", "Anapc7", "Atm", "Atr", "Bub1", "Bub1B", "Bub3", "Ccna1", "Ccna2", "Ccnb1", "Ccnb2", "Ccnb3", "Ccnd1", "Ccnd2", "Ccnd3", "Ccne1", "Ccne2", "Ccnh", "Cdc14A", "Cdc14B", "Cdc16", "Cdc20", "Cdc23", "Cdc25A", "Cdc25B", "Cdc25C", "Cdc26", "Cdc27", "Cdc45", "Cdc6", "Cdc7", "Cdk1", "Cdk2", "Cdk4", "Cdk6", "Cdk7", "Cdkn1A", "Cdkn1B", "Cdkn1C", "Cdkn2A", "Cdkn2B", "Cdkn2C", "Cdkn2D", "Chek1", "Chek2", "Crebbp", "Cul1", "Dbf4", "E2F1", "E2F2", "E2F3", "E2F4", "E2F5", "Ep300", "Espl1", "Fzr1", "Gadd45A", "Gadd45B", "Gadd45G", "Gsk3B", "Hdac1", "Hdac2", "Mad1L1", "Mad2L1", "Mad2L2", "Mcm2", "Mcm3", "Mcm4", "Mcm5", "Mcm6", "Mcm7", "Mdm2", "Myc", "Orc1", "Orc2", "Orc3", "Orc4", "Orc5", "Orc6", "Pcna", "Pkmyt1", "Plk1", "Prkdc", "Pttg1", "Pttg2", "Rad21", "Rb1", "Rbl1", "Rbl2", "Rbx1", "Sfn", "Skp1", "Skp1P2", "Skp2", "Smad2", "Smad3", "Smad4", "Smc1A", "Smc1B", "Smc3", "Stag1", "Stag2", "Tfdp1", "Tfdp2", "Tgfb1", "Tgfb2", "Tgfb3", "Tp53", "Ttk", "Wee1", "Wee2", "Ywhab", "Ywhae", "Ywhag", "Ywhah", "Ywhaq", "Ywhaz", "Zbtb17"]
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(process)d - %(message)s",
+)
+LOGGER = logging.getLogger("pearson")
 
-right = ['HMGCS1', 'HMGCR', 'MVK', 'PMVK', 'MVD', 'FDPS', 'FDFT1', 'SQLE', 'LSS', 'CYP51A1', 'MSMO1', 'NSDHL', 'SC5D', 'DHCR7', 'LDLR', 'PCSK9', 'VLDLR', 'SCARB1', 'LRP1', 'LRP2', 'NPC1L1', 'ABCA1', 'ABCG1', 'ABCG5', 'ABCG8', 'CYP7A1', 'CYP27A1', 'ABCB11', 'LIPA', 'NPC1', 'NPC2', 'STARD3', 'VAPA', 'VAPB', 'OSBPL5', 'SOAT1', 'LCAT', 'LIPG', 'PLTP', 'CETP', 'LPA', 'LIPC', 'APOA1', 'APOC1', 'APOB', 'APOC2', 'APOH', 'SORT1', 'LPL', 'ANGPTL3', 'ANGPTL4', 'SLC27A1', 'SLC27A2', 'SLC27A3', 'SLC27A4', 'SLC27A5', 'SLC27A6', 'CD36', 'FABP1', 'FABP2', 'FABP3', 'FABP4', 'FABP5', 'FABP6', 'FABP7', 'FABP12', 'ACSL1', 'ACSL3', 'ACSL4', 'ACSL5', 'ACSM1', 'ACSM2A', 'ACSM2B', 'ACSM3', 'ACSM4', 'ACSM5', 'ACSM6', 'ACSS1', 'ACSS2', 'ACSS3', 'ACSBG1', 'ACSBG2', 'CPT1A', 'CPT1B', 'CPT1C', 'CPT2', 'SLC25A20', 'ACADVL', 'ACADL', 'ACADM', 'ACADS', 'ACADSB', 'ECHS1', 'EHHADH', 'ECH1', 'ECHDC2', 'ECHDC3', 'HADH', 'HADHA', 'HADHB', 'ACAA1', 'ACAA2', 'ECI1', 'ECI2', 'ACOX2', 'CRAT', 'CROT', 'MLYCD', 'PHYH', 'HSD17B4', 'SCP2', 'FASN', 'ACACA', 'ACACB', 'ELOVL1', 'ELOVL2', 'ELOVL3', 'ELOVL4', 'ELOVL5', 'ELOVL6', 'ELOVL7', 'TECR', 'ACOT1', 'ACOT7', 'THEM4', 'THEM5', 'PPT1', 'PPT2', 'HSD17B12', 'BAAT', 'SCD', 'FADS1', 'FADS2']
+shared = Manager().Namespace()
 
-right = [x.capitalize() for x in right]
 
-left_set = set(left)
-right_set = set(right)
+def parallelize_dataframe(df, func, n_cores=4):
+    df_split = np.array_split(df, n_cores)
+    pool = Pool(n_cores)
+    df = pd.concat(pool.map(func, df_split))
+    pool.close()
+    pool.join()
+    return df
 
-dat = pd.read_csv('./neonatal.csv', index_col=0)
 
-left_dat = dat
-# left_dat = dat.drop(index=[x for x in dat.index if x not in left_set])
-right_dat = dat.drop(index=[x for x in dat.index if x not in right_set])
+def compute_pearson_corr(df: pd.DataFrame):
+    LOGGER.info("compute pearson corr, shape=%s", df.shape)
+    for r in df.index:
+        for c in df.columns:
+            df.at[r, c] = shared.left_data.loc[r].corr(shared.right_data.loc[c])
 
-ans = pd.DataFrame(0, index=left_dat.index, columns=right_dat.index, dtype=float)
-for r in left_dat.index:
-    for c in right_dat.index:
-        row_series = left_dat.loc[r]
-        col_series = right_dat.loc[c]
-        ans.at[r, c] = row_series.corr(col_series)
 
-ans.to_csv('./neonatal.all.csv')
+def process_cell_group(cell_group: str, genes: List[str]):
+    """Process a cell group."""
+    gene_data = pd.read_csv(f"./data-20210418/{cell_group}.csv", index_col=0)
+    left_set = set(gene_data.index.tolist())
+    right_set = set(genes)
+    left_data = gene_data.drop(index=[x for x in gene_data.index if x not in left_set])
+    right_data = gene_data.drop(
+        index=[x for x in gene_data.index if x not in right_set]
+    )
+    ans = pd.DataFrame(0, index=left_data.index, columns=right_data.index, dtype=float)
+    shared.left_data = left_data
+    shared.right_data = right_data
 
+    ans = parallelize_dataframe(ans, compute_pearson_corr, n_cores=8)
+    ans.to_csv(f"./{cell_group}.pearson.all.csv")
+
+
+def main():
+    meta = pd.read_csv("./data-20210422/Correlated Genes.csv")
+    for cell_group in meta.columns:
+        if cell_group != "Myeloid":
+            continue
+        gene_series = meta[[cell_group]]
+        gene_series = gene_series[gene_series[cell_group].notnull()]
+        genes = gene_series[cell_group].tolist()
+        LOGGER.info("process cell group, cell_group=%s, genes=%s", cell_group, genes)
+        process_cell_group(cell_group, genes)
+
+
+if __name__ == "__main__":
+    main()

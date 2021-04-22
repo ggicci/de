@@ -52,7 +52,7 @@ def ttest(filename: str):
 
     df = pandas.read_csv(filename, header=0, index_col=0).transpose()
 
-    groupings = find_groupings(df)
+    groupings = find_groupings(df, default_group='arpc')
     LOGGER.info(
         "group, filename=%s, groups=%d, groupings=%s",
         filename,
