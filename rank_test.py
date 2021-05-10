@@ -30,7 +30,10 @@ def get_output_filename(filename: str, suffix: str) -> str:
     return os.path.join(dirname, title + suffix)
 
 
-def find_groupings(df: pandas.DataFrame, default_group: str = "nor") -> List:
+def find_groupings(
+    df: pandas.DataFrame, default_group: str = "nor", exclude_groups: List[str] = None
+) -> List:
+    exclude_groups = [] if exclude_groups is None else exclude_groups
     groups = defaultdict(list)
     for name in df.index:
         tag = name.lower().split("_")[0]
@@ -40,7 +43,7 @@ def find_groupings(df: pandas.DataFrame, default_group: str = "nor") -> List:
     if default_group not in groups:
         raise Exception(f"default group not found: {default_group}")
     for tag in groups.keys():
-        if tag == default_group:
+        if tag == default_group or tag in exclude_groups:
             continue
         groupings.append(((default_group, groups[default_group]), (tag, groups[tag])))
     return groupings
@@ -52,7 +55,7 @@ def rank_test(filename: str):
 
     df = pandas.read_csv(filename, header=0, index_col=0).transpose()
 
-    groupings = find_groupings(df, default_group='nor')
+    groupings = find_groupings(df, default_group="he10w", exclude_groups=["he5w"])
     LOGGER.info(
         "group, filename=%s, groups=%d, groupings=%s",
         filename,
