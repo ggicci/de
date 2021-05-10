@@ -35,7 +35,7 @@ def compute_pearson_corr(df: pd.DataFrame):
 
 
 def process_cell_group_parallel(cell_group: str, genes: List[str]):
-    gene_data = pd.read_csv(f"./data-20210418/{cell_group}.csv", index_col=0)
+    gene_data = pd.read_csv(f"./data-20210507/{cell_group}.csv", index_col=0)
     left_set = set(gene_data.index.tolist())
     right_set = set(genes)
     left_data = gene_data.drop(index=[x for x in gene_data.index if x not in left_set])
@@ -58,7 +58,7 @@ def process_cell_group(cell_group: str, genes: List[str]):
         LOGGER.info("skip cus output file exists, file=%s", output_file)
         return
 
-    input_file = f"./data-20210418/{cell_group}.csv"
+    input_file = f"./data-20210507/{cell_group}.csv"
     LOGGER.info("read cell group gene data, file=%s", input_file)
     gene_data = pd.read_csv(input_file, index_col=0)
     left_set = set(gene_data.index.tolist())
@@ -85,7 +85,7 @@ def process_cell_group(cell_group: str, genes: List[str]):
 
 
 def main():
-    meta = pd.read_csv("./data-20210422/Correlated Genes.csv")
+    meta = pd.read_csv("./data-20210507/CO.csv")
     for cell_group in meta.columns:
         gene_series = meta[[cell_group]]
         gene_series = gene_series[gene_series[cell_group].notnull()]
