@@ -5,6 +5,7 @@ import math
 import os
 from multiprocessing import Manager, Pool
 from typing import List
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -17,48 +18,18 @@ LOGGER = logging.getLogger("pearson")
 
 shared = Manager().Namespace()
 
-
-def parallelize_dataframe(df, func, n_cores=4):
-    df_split = np.array_split(df, n_cores)
-    pool = Pool(n_cores)
-    df = pd.concat(pool.map(func, df_split))
-    pool.close()
-    pool.join()
-    return df
-
-
-def compute_pearson_corr(df: pd.DataFrame):
-    LOGGER.info("compute pearson corr, shape=%s", df.shape)
-    for r in df.index:
-        for c in df.columns:
-            df.at[r, c] = shared.left_data.loc[r].corr(shared.right_data.loc[c])
-
-
-def process_cell_group_parallel(cell_group: str, genes: List[str]):
-    gene_data = pd.read_csv(f"./data-20210507/{cell_group}.csv", index_col=0)
-    left_set = set(gene_data.index.tolist())
-    right_set = set(genes)
-    left_data = gene_data.drop(index=[x for x in gene_data.index if x not in left_set])
-    right_data = gene_data.drop(
-        index=[x for x in gene_data.index if x not in right_set]
-    )
-    ans = pd.DataFrame(0, index=left_data.index, columns=right_data.index, dtype=float)
-    shared.left_data = left_data
-    shared.right_data = right_data
-
-    ans = parallelize_dataframe(ans, compute_pearson_corr, n_cores=8)
-    ans.to_csv(f"./{cell_group}.pearson.all.csv")
+DATA_DIR = Path.cwd() / "data-20210520-chf"
 
 
 def process_cell_group(cell_group: str, genes: List[str]):
     LOGGER.info("process cell group, cell_group=%s, genes=%s", cell_group, genes)
 
-    output_file = f"./{cell_group}.pearson.all.csv"
-    if os.path.exists(output_file):
+    output_file = DATA_DIR / f"{cell_group}.pearson.all.csv"
+    if output_file.exists():
         LOGGER.info("skip cus output file exists, file=%s", output_file)
         return
 
-    input_file = f"./data-20210507/{cell_group}.csv"
+    input_file = DATA_DIR / f"{cell_group}.csv"
     LOGGER.info("read cell group gene data, file=%s", input_file)
     gene_data = pd.read_csv(input_file, index_col=0)
     left_set = set(gene_data.index.tolist())
@@ -85,7 +56,7 @@ def process_cell_group(cell_group: str, genes: List[str]):
 
 
 def main():
-    meta = pd.read_csv("./data-20210507/CO.csv")
+    meta = pd.read_csv(DATA_DIR / "guide.csv")
     for cell_group in meta.columns:
         gene_series = meta[[cell_group]]
         gene_series = gene_series[gene_series[cell_group].notnull()]
