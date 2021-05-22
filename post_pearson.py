@@ -2,6 +2,7 @@
 
 import logging
 
+from pathlib import Path
 import pandas as pd
 
 logging.basicConfig(
@@ -10,13 +11,14 @@ logging.basicConfig(
 )
 LOGGER = logging.getLogger("post_pearson")
 
+DATA_DIR = Path.cwd() / "data-20210520-emb"
 
 def process_cell_group(cell_group: str, threshold: float = 0.6):
     LOGGER.info(
         "process cell group, cell_group=%s, threshold=%f", cell_group, threshold
     )
     assert threshold > 0, "threshold should > 0"
-    input_file = f"./data-20210510/pearson/{cell_group}.pearson.all.csv"
+    input_file = DATA_DIR / f"{cell_group}.pearson.all.csv"
     pearson = pd.read_csv(input_file, index_col=0)
     filtered = pearson[
         pearson.abs().ge(threshold).any(1) & pearson.abs().lt(0.99).all(1)
@@ -30,17 +32,15 @@ def process_cell_group(cell_group: str, threshold: float = 0.6):
             else:
                 ans.at[r, c] = f"{corr:.4f}"
 
-    output_file = (
-        f"./data-20210510/pearson/{cell_group}.pearson.filtered.{threshold}.csv"
-    )
+    output_file = DATA_DIR / f"{cell_group}.pearson.filtered.{threshold}.csv"
     ans.to_csv(output_file)
 
 
 def main():
-    meta = pd.read_csv("./data-20210510/CO.csv")
+    meta = pd.read_csv(DATA_DIR / "guide.csv")
+
     for cell_group in meta.columns:
         process_cell_group(cell_group, threshold=0.6)
-
 
 if __name__ == "__main__":
     main()
