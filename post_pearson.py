@@ -11,7 +11,8 @@ logging.basicConfig(
 )
 LOGGER = logging.getLogger("post_pearson")
 
-DATA_DIR = Path.cwd() / "data-20210520-emb"
+DATA_DIR = Path.cwd() / "data-20210523-emb"
+
 
 def process_cell_group(cell_group: str, threshold: float = 0.6):
     LOGGER.info(
@@ -20,15 +21,18 @@ def process_cell_group(cell_group: str, threshold: float = 0.6):
     assert threshold > 0, "threshold should > 0"
     input_file = DATA_DIR / f"{cell_group}.pearson.all.csv"
     pearson = pd.read_csv(input_file, index_col=0)
-    filtered = pearson[
-        pearson.abs().ge(threshold).any(1) & pearson.abs().lt(0.99).all(1)
+    # Filter 1: out any column with a corr-value >= threshold.
+    filtered = pearson[pearson.abs().ge(threshold).any(1)]
+    # Filter 2: all the columns should have at least 2 values largher than the threshold.
+    filtered = filtered[
+        filtered.columns[filtered[filtered.abs() >= threshold].count() > 1]
     ]
     ans = pd.DataFrame(0, index=filtered.index, columns=filtered.columns, dtype=str)
     for r in filtered.index:
         for c in filtered.columns:
             corr = filtered.at[r, c]
             if abs(corr) < threshold:
-                ans.at[r, c] = "-"
+                ans.at[r, c] = "0"
             else:
                 ans.at[r, c] = f"{corr:.4f}"
 
@@ -41,6 +45,7 @@ def main():
 
     for cell_group in meta.columns:
         process_cell_group(cell_group, threshold=0.6)
+
 
 if __name__ == "__main__":
     main()

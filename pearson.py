@@ -18,7 +18,7 @@ LOGGER = logging.getLogger("pearson")
 
 shared = Manager().Namespace()
 
-DATA_DIR = Path.cwd() / "data-20210520-chf"
+DATA_DIR = Path.cwd() / "data-20210523-emb"
 
 
 def process_cell_group(cell_group: str, genes: List[str]):
