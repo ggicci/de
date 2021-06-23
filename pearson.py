@@ -2,12 +2,9 @@
 
 import logging
 import math
-import os
-from multiprocessing import Manager, Pool
-from typing import List
 from pathlib import Path
+from typing import List
 
-import numpy as np
 import pandas as pd
 
 logging.basicConfig(
@@ -16,7 +13,6 @@ logging.basicConfig(
 )
 LOGGER = logging.getLogger("pearson")
 
-shared = Manager().Namespace()
 
 DATA_DIR = Path.cwd() / "data-20210523-emb"
 

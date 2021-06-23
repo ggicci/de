@@ -55,7 +55,7 @@ def rank_test(filename: str):
 
     df = pandas.read_csv(filename, header=0, index_col=0).transpose()
 
-    groupings = find_groupings(df, default_group="he10w", exclude_groups=["he5w"])
+    groupings = find_groupings(df, default_group="control", exclude_groups=None)
     LOGGER.info(
         "group, filename=%s, groups=%d, groupings=%s",
         filename,
