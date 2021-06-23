@@ -22,11 +22,18 @@ LOGGER = logging.getLogger("pearson")
 
 WORKING_DIR = Path.cwd()
 
+
 def compute_pearson_of_two_tables(file_a: Path, file_b: Path):
     name_a = file_a.stem
     name_b = file_b.stem
-    LOGGER.info("compute pearson, file_a=%s, file_b=%s, name_a=%s, name_b=%s", file_a, file_b, name_a, name_b)
-    
+    LOGGER.info(
+        "compute pearson, file_a=%s, file_b=%s, name_a=%s, name_b=%s",
+        file_a,
+        file_b,
+        name_a,
+        name_b,
+    )
+
     mat_a = pd.read_csv(file_a, index_col=0)
     mat_b = pd.read_csv(file_b, index_col=0)
 
@@ -53,7 +60,7 @@ def compute_pearson_of_two_tables(file_a: Path, file_b: Path):
             series_r = series_r / series_r.max()
             series_c = 2 ** series_c
             series_c = series_c / series_c.max()
-            ans.at[r,c] = series_r.corr(series_c)
+            ans.at[r, c] = series_r.corr(series_c)
             count += 1
             if count == milestones[next_milestone]:
                 LOGGER.info("in progress, percentage=%d%%", next_milestone + 1)
@@ -62,10 +69,12 @@ def compute_pearson_of_two_tables(file_a: Path, file_b: Path):
     ans.to_csv(output_file)
     LOGGER.info("result saved, output=%s", output_file)
 
+
 def parse_args():
     parser = ArgumentParser()
-    parser.add_argument("-f", "--files", nargs='+', default=[])
+    parser.add_argument("-f", "--files", nargs="+", default=[])
     return parser.parse_args()
+
 
 def main():
     opts = parse_args()
@@ -73,11 +82,9 @@ def main():
     assert all(x.endswith(".csv") for x in opts.files), "require .csv files"
     filenames = [Path.absolute(Path(x)) for x in opts.files]
 
-    for i, filename in enumerate(filenames):
-        print(f"{i:4d} {filename}")
-
     for (file_a, file_b) in itertools.combinations(filenames, 2):
         compute_pearson_of_two_tables(file_a, file_b)
+
 
 if __name__ == "__main__":
     main()
