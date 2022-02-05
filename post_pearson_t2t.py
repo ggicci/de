@@ -24,6 +24,12 @@ def post_pearson(filename: Path, threshold: float = 0.99):
         filtered.columns[filtered[filtered.abs() >= threshold].count() > 0]
     ]
 
+    # Clean values:
+    for r in filtered.index:
+        for c in filtered.columns:
+            if abs(filtered.loc[r, c]) < threshold:
+                filtered.loc[r, c] = 0.0
+
     output_file = WORKING_DIR / f"{filename.stem}.filtered.{threshold}.csv"
     filtered.to_csv(output_file)
     LOGGER.info("filtered result saved at %s", output_file)
@@ -39,7 +45,7 @@ def parse_args():
 
 def main():
     opts = parse_args()
-    assert len(opts.files) >= 2, "require at least 2 files"
+    assert len(opts.files) > 0, "require at least 1 file"
     assert all(x.endswith(".csv") for x in opts.files), "require .csv files"
     filenames = [Path.absolute(Path(x)) for x in opts.files]
 

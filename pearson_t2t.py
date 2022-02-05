@@ -7,12 +7,11 @@ Table to table pearson.
 import itertools
 import logging
 import math
-import os
 from argparse import ArgumentParser
 from pathlib import Path
-from typing import List
 
 import pandas as pd
+from scipy.stats import pearsonr
 
 logging.basicConfig(
     level=logging.INFO,
@@ -41,11 +40,20 @@ def compute_pearson_of_two_tables(file_a: Path, file_b: Path):
     mat_a.rename(index={x: f"{name_a}_{x}" for x in mat_a.index}, inplace=True)
     mat_b.rename(index={x: f"{name_b}_{x}" for x in mat_b.index}, inplace=True)
 
+    # Remove duplicated rows. (duplicate index name, keep the first row)
+    mat_a = mat_a[~mat_a.index.duplicated(keep="first")]
+    mat_b = mat_b[~mat_b.index.duplicated(keep="first")]
+
+    # Remove rows only having zero values.
+    mat_a = mat_a.loc[(mat_a != 0).any(axis=1)]
+    mat_b = mat_b.loc[(mat_b != 0).any(axis=1)]
+
     # Rename columns, use index no. instead of names. Otherwise, pearson won't work.
     mat_a.rename(columns={x: str(i) for i, x in enumerate(mat_a.columns)}, inplace=True)
     mat_b.rename(columns={x: str(i) for i, x in enumerate(mat_b.columns)}, inplace=True)
 
     ans = pd.DataFrame(0, index=mat_a.index, columns=mat_b.index, dtype=float)
+    ans_p_value = pd.DataFrame(0, index=mat_a.index, columns=mat_b.index, dtype=float)
     LOGGER.info("compute pearson corr, shape=%s", ans.shape)
 
     total = ans.size
@@ -56,18 +64,46 @@ def compute_pearson_of_two_tables(file_a: Path, file_b: Path):
         for c in ans.columns:
             series_r = mat_a.loc[r]
             series_c = mat_b.loc[c]
-            series_r = 2 ** series_r
+
+            # Normalize.
+            # NOTE: standardize your data first and then do normalization.
+
+            # Z-score/mean normalization.
+            # series_r = (series_r - series_r.mean()) / series_r.std()
+
+            # Min-max normalization.
+            # series_r = (series_r - series_r.min()) / series_r.max() - series_r.min())
+            # series_c = (series_c - series_c.min()) / series_c.max() - series_c.min())
+
+            # Custom normalization.
             series_r = series_r / series_r.max()
-            series_c = 2 ** series_c
             series_c = series_c / series_c.max()
-            ans.at[r, c] = series_r.corr(series_c)
+
+            # Only pearson value.
+            # ans.at[r, c] = series_r.corr(series_c)
+
+            # Get pearson value and p-value.
+            try:
+                r_value, p_value = pearsonr(series_r, series_c)
+                ans.at[r, c] = r_value
+                ans_p_value.at[r, c] = p_value
+            except ValueError as ex:
+                LOGGER.exception(ex)
+                LOGGER.error(series_r)
+                LOGGER.error(series_c)
+                raise
+
             count += 1
             if count == milestones[next_milestone]:
                 LOGGER.info("in progress, percentage=%d%%", next_milestone + 1)
                 next_milestone += 1
     output_file = WORKING_DIR / f"pearson_{name_a}_x_{name_b}.csv"
     ans.to_csv(output_file)
-    LOGGER.info("result saved, output=%s", output_file)
+    LOGGER.info("correlation value result saved, output=%s", output_file)
+
+    output_file = WORKING_DIR / f"pearson_{name_a}_x_{name_b}_p_value.csv"
+    ans_p_value.to_csv(output_file)
+    LOGGER.info("p-value result saved, output=%s", output_file)
 
 
 def parse_args():
