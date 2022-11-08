@@ -4,12 +4,9 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-tensorflow = "2.6.2"
-tensorflow-probability = "0.15.0"
 diffxpy = "*"
 matplotlib = "*"
 seaborn = "*"
-tensorflow-gpu = "2.6.2"
 mne = "*"
 
 [dev-packages]
